@@ -1,72 +1,81 @@
-# Original script created by Matt Peeples: http://www.mattpeeples.net/
-# Jim Byers version based on R script from http://www.mattpeeples.net/kmeans.html
+# Modified by Jim Byers james.byers.business@gmail.com for easier batch use 
+#    ,make it easier to use with files with text field
+#    ,improved csv output formating when there are row mames in input file
+# Original R script created by Matt Peeples: http://www.mattpeeples.net/
+
+
+# Specify your option choices
+
+# Specify the data file name
+my_data_file <- 'iris_data_set2.csv'
+my_data_file
+# Covert data to percents? per <- 1=yes, 2=no  
+per <- 2
+# Z-score standardize data? stand <- 1=yes, 2=no 
+stand <- 2
+# How many clustering solutions to test (> row numbers)?  n.lev <- # 
+#   (must be between 2 and the number of rows in the database)
+n.lev = 10
+# "What number of cluster do you want to use?  clust.level <- 2
+clust.level <- 2
+
+# End of options settings
+
+# uncomment next like to set workign directory
+setwd("~/Documents/HTC/BI/Statistics and Machine Learning/K-Square ")
+
 # initialize all necessary libraries
 library(cluster)
 library(psych)
 
-# read CSV file - (iris_data_set.csv) - convert to a matrix
-data1 <- read.table(file='iris_data_set.csv', sep=',', header=T, row.names=1)
+# read CSV file - (iris_data_set2.csv) - convert to a matrix
+data1 <- read.table(file=paste(my_data_file), sep=',', header=T, row.names=1, as.is = 1)
 data.p <- as.matrix(data1)
 ncol(data1)
-# Ask for user input - convert raw counts to percents?
-# choose.per <- function(){readline("Covert data to percents? 1=yes, 2=no : ")} 
-# per <- as.integer(choose.per())
-per <- 2
-per
 
 
-# If user selects yes, convert data from counts to percents
+# Covert data to percents? If user selects 1=yes, convert data from counts to percents
 if (per == 1) {
-data.p <- prop.table(data.p,1)*100}
+  data.p <- prop.table(data.p,1)*100}
 
-# Ask for user input - Z-score standardize data?
-# choose.stand <- function(){readline("Z-score standardize data? 1=yes, 2=no : ")} 
-# stand <- as.integer(choose.stand())
-stand <- 2
-
-# If user selects yes, Z-score standardize data
+# Z-score standardize data? If user selects 1=yes, Z-score standardize data
 kdata <- na.omit(data.p) 
 if (stand == 1) {
-kdata <- scale(kdata)}
-
-# Ask for user input - determine the number of cluster solutions to test (must between 2 and the number of rows in the database)
-# choose.level <- function(){readline("How many clustering solutions to test (> row numbers)? ")} 
-# n.lev <- as.integer(choose.level())
-n.lev = 3
+  kdata <- scale(kdata)}
 
 # Calculate the within groups sum of squared error (SSE) for the number of cluster solutions selected by the user
 wss <- rnorm(10)
 while (prod(wss==sort(wss,decreasing=T))==0) {
-wss <- (nrow(kdata)-1)*sum(apply(kdata,2,var))
-for (i in 2:n.lev) wss[i] <- sum(kmeans(kdata, centers=i, iter.max=50, nstart=10)$withinss)}
+  wss <- (nrow(kdata)-1)*sum(apply(kdata,2,var))
+  for (i in 2:n.lev) wss[i] <- sum(kmeans(kdata, centers=i, iter.max=50, nstart=10)$withinss)}
 
 # Calculate the within groups SSE for 250 randomized data sets (based on the original input data)
 k.rand <- function(x){
-km.rand <- matrix(sample(x),dim(x)[1],dim(x)[2])
-rand.wss <- as.matrix(dim(x)[1]-1)*sum(apply(km.rand,2,var))
-for (i in 2:n.lev) rand.wss[i] <- sum(kmeans(km.rand, centers=i, iter.max=50, nstart=10)$withinss)
-rand.wss <- as.matrix(rand.wss)
-return(rand.wss)}
+  km.rand <- matrix(sample(x),dim(x)[1],dim(x)[2])
+  rand.wss <- as.matrix(dim(x)[1]-1)*sum(apply(km.rand,2,var))
+  for (i in 2:n.lev) rand.wss[i] <- sum(kmeans(km.rand, centers=i, iter.max=50, nstart=10)$withinss)
+  rand.wss <- as.matrix(rand.wss)
+  return(rand.wss)}
 rand.mat <- matrix(0,n.lev,250)
 k.1 <- function(x) { 
-for (i in 1:250) {
-r.mat <- as.matrix(suppressWarnings(k.rand(kdata)))
-rand.mat[,i] <- r.mat}
-return(rand.mat)}
+  for (i in 1:250) {
+    r.mat <- as.matrix(suppressWarnings(k.rand(kdata)))
+    rand.mat[,i] <- r.mat}
+  return(rand.mat)}
 
 # Same function as above for data with < 3 column variables
 k.2.rand <- function(x){
-rand.mat <- matrix(0,n.lev,250)
-km.rand <- matrix(sample(x),dim(x)[1],dim(x)[2])
-rand.wss <- as.matrix(dim(x)[1]-1)*sum(apply(km.rand,2,var))
-for (i in 2:n.lev) rand.wss[i] <- sum(kmeans(km.rand, centers=i, iter.max=50, nstart=10)$withinss)
-rand.wss <- as.matrix(rand.wss)
-return(rand.wss)}
+  rand.mat <- matrix(0,n.lev,250)
+  km.rand <- matrix(sample(x),dim(x)[1],dim(x)[2])
+  rand.wss <- as.matrix(dim(x)[1]-1)*sum(apply(km.rand,2,var))
+  for (i in 2:n.lev) rand.wss[i] <- sum(kmeans(km.rand, centers=i, iter.max=50, nstart=10)$withinss)
+  rand.wss <- as.matrix(rand.wss)
+  return(rand.wss)}
 k.2 <- function(x){
-for (i in 1:250) {
-r.1 <- k.2.rand(kdata)
-rand.mat[,i] <- r.1}
-return(rand.mat)}
+  for (i in 1:250) {
+    r.1 <- k.2.rand(kdata)
+    rand.mat[,i] <- r.1}
+  return(rand.mat)}
 
 # Determine if the data data table has > or < 3 variables and call appropriate function above
 if (dim(kdata)[2] == 2) { rand.mat <- k.2(kdata) } else { rand.mat <- k.1(kdata) }
@@ -90,8 +99,8 @@ legend('topright',c('Actual Data', '250 Random Runs'), col=c('blue', 'red'), lty
 r.sse <- matrix(0,dim(rand.mat)[1],dim(rand.mat)[2])
 wss.1 <- as.matrix(wss)
 for (i in 1:dim(r.sse)[2]) {
-r.temp <- abs(rand.mat[,i]-wss.1[,1])
-r.sse[,i] <- r.temp}
+  r.temp <- abs(rand.mat[,i]-wss.1[,1])
+  r.sse[,i] <- r.temp}
 r.sse.m <- apply(r.sse,1,mean)
 r.sse.sd <- apply(r.sse,1,sd)
 r.sse.plus <- r.sse.m + r.sse.sd
@@ -115,20 +124,20 @@ lines(r.sse.plus, type='l', col='red')
 lines(r.sse.min, type='l', col='red')
 legend('topright',c('SSE - random SSE', 'SD of SSE-random SSE'), col=c('blue', 'red'), lty=1)
 
-# Ask for user input - Select the appropriate number of clusters
-# choose.clust <- function(){readline("What clustering solution would you like to use? ")} 
-# clust.level <- as.integer(choose.clust())
-clust.level <- 3
-
 # Apply K-means cluster solutions - append clusters to CSV file
 fit <- kmeans(kdata, clust.level, iter.max=50, nstart=10)
 aggregate(kdata, by=list(fit$cluster), FUN=mean)
 clust.out <- fit$cluster
 kclust <- as.matrix(clust.out)
 kclust.out <- cbind(kclust, data1)
-write.table(kclust.out, file="kmeans_out.csv", sep=",")
+# old_first_row <- colnames(kclust.out)
+# colnames(kclust.out) <- paste('row_name', old_first_row)
+# colnames(kclust.out)[0] <- "Row_name"
+write.table(cbind(Row_number = row.names(kclust.out), kclust.out), file="kmeans_out.csv", sep=",", row.names = FALSE) 
+#kclust.out <- cbind(Row.Names = rownames(kclust.out), kclust.out)
+#write.table(kclust.out, file="kmeans_out.csv", sep=",")
 
-# Display Pricnipal Components plot of data with clusters identified
+# Display Principal Components plot of data with clusters identified
 par(ask=TRUE)
 data.p2 <- prop.table(data.p,1)*100
 clusplot(data.p2, fit$cluster, shade=F, labels=2, lines=0, color=T, lty=4, main='Principal Components plot showing K-means clusters')
@@ -165,5 +174,4 @@ lines(r.sse.min, type='l', col='red')
 legend('topright',c('SSE - random SSE', 'SD of SSE-random SSE'), col=c('blue', 'red'), lty=1)
 clusplot(data.p2, fit$cluster, shade=F, labels=2, lines=0, color=T, lty=4, main='Principal Components plot showing K-means clusters')
 dev.off()
-
 # end of script
